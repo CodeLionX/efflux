@@ -32,7 +32,7 @@ public interface RtpSession extends DataPacketReceiver, ControlPacketReceiver {
 
     String getId();
 
-    Set<Integer> getPayloadType();
+    int getPayloadType();
 
     boolean init();
 

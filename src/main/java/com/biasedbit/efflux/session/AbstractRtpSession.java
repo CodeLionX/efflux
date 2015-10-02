@@ -93,7 +93,7 @@ public abstract class AbstractRtpSession implements RtpSession, TimerTask {
     // configuration --------------------------------------------------------------------------------------------------
 
     protected final String id;
-    protected final Set<Integer> payloadTypes = new HashSet<Integer>();
+    protected final int payloadType;
     protected final HashedWheelTimer timer;
     protected final OrderedMemoryAwareThreadPoolExecutor executor;
     protected String host;
@@ -143,25 +143,23 @@ public abstract class AbstractRtpSession implements RtpSession, TimerTask {
         this(id, payloadType, local, null, executor);
     }
     
-    public AbstractRtpSession(String id, int payloadType, RtpParticipant local, HashedWheelTimer timer,
-    		OrderedMemoryAwareThreadPoolExecutor executor) {
-    	this(id, Collections.singleton(payloadType), local, timer, executor);
-    }
+//    public AbstractRtpSession(String id, int payloadType, RtpParticipant local, HashedWheelTimer timer,
+//    		OrderedMemoryAwareThreadPoolExecutor executor) {
+//    	this(id, Collections.singleton(payloadType), local, timer, executor);
+//    }
     
-    public AbstractRtpSession(String id, Collection<Integer> payloadTypes , RtpParticipant local, HashedWheelTimer timer,
+    public AbstractRtpSession(String id, int payloadType, RtpParticipant local, HashedWheelTimer timer,
                               OrderedMemoryAwareThreadPoolExecutor executor) {
-    	for (int payloadType : payloadTypes) {
-    		if ((payloadType < 0) || (payloadType > 127)) {
-    			throw new IllegalArgumentException("PayloadTypes must be in range [0;127]");
-    		}   		
-    	}
+		if ((payloadType < 0) || (payloadType > 127)) {
+			throw new IllegalArgumentException("PayloadTypes must be in range [0;127]");
+		}   		
 
         if (!local.isReceiver()) {
             throw new IllegalArgumentException("Local participant must have its data & control addresses set");
         }
 
         this.id = id;
-        this.payloadTypes.addAll(payloadTypes);
+        this.payloadType = payloadType;
         this.localParticipant = local;
         this.participantDatabase = this.createDatabase();
         this.executor = executor;
@@ -202,8 +200,8 @@ public abstract class AbstractRtpSession implements RtpSession, TimerTask {
     }
 
     @Override
-    public Set<Integer> getPayloadType() {
-        return this.payloadTypes;
+    public int getPayloadType() {
+        return this.payloadType;
     }
 
     @Override
@@ -329,8 +327,8 @@ public abstract class AbstractRtpSession implements RtpSession, TimerTask {
         if (!this.running.get()) {
             return false;
         }
-        if (!this.payloadTypes.contains(packet.getPayloadType()) && this.payloadTypes.size() == 1) {
-        	packet.setPayloadType(this.payloadTypes.iterator().next());
+        if (!(this.payloadType == packet.getPayloadType())) {
+        	packet.setPayloadType(this.payloadType);
         }
         		
         packet.setSsrc(this.localParticipant.getSsrc());
@@ -430,7 +428,7 @@ public abstract class AbstractRtpSession implements RtpSession, TimerTask {
             return;
         }
 
-        if (!this.payloadTypes.contains(packet.getPayloadType())) {
+        if (!(this.payloadType == packet.getPayloadType())) {
             // Silently discard packets of wrong payload.
             return;
         }
